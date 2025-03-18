@@ -1,0 +1,32 @@
+#!/bin/bash
+#SBATCH -A ASC23014
+#SBATCH -J ML # Job name
+#SBATCH -o ML.o%j       # Name of stdout output file
+#SBATCH -e ML.e%j       # Name of stderr error file
+#SBATCH -p gpu-a100-dev    # Queue (partition) name
+#SBATCH -N 1             # Total # of nodes 
+#SBATCH -n 1             # Total # of mpi tasks
+#SBATCH -t 02:00:00       # Run time (hh:mm:ss
+
+
+date
+source ../v_raps/bin/activate
+
+#mpiexec -n 1 ython3 driver.py "PM100" "rnn_training" "/application-fingerprinting/yaml/AppFP.yaml
+#python3 main.py "PM100" "cluster_visualization" "/application-fingerprinting/yaml/AppFP.yaml"
+#python3 main.py
+
+# Marconi100
+#python3 main.py --system marconi100 --policy ml -t 1500s -o -p power --imtype pdf -f $WORK/job_table.parquet
+#python3 main.py --system marconi100 --policy fcfs -t 1500s -o -p power --imtype pdf -f $WORK/job_table.parquet
+#python3 main.py --system marconi100 --policy priority -t 1500s -f $WORK/job_table.parquet
+#python3 main.py --system marconi100 --policy priority -t 1500s -o -p power --imtype pdf -f $WORK/job_table.parquet
+python3 main.py -f $WORK/job_table.parquet --system marconi100 --policy ml --backfill firstfit -o -p power --imtype pdf -ff 1d -t 5d
+#python3 main.py --system marconi100 -s fcfs -t 1500s -f $WORK/job_table.parquet
+#python3 main.py --system marconi100 -s priority -t 1500s -f $WORK/job_table.parquet
+#python3 main.py --system marconi100 -s ml -t 1500s -f $WORK/job_table.parquet
+
+
+
+
+date
