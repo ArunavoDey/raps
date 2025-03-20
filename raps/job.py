@@ -1,6 +1,5 @@
 from enum import Enum
 
-
 """
 Note: want to simplify this in the future to use a minimal required set of job attributes, 
 the standard workload format (swf) https://www.cs.huji.ac.il/labs/parallel/workload/swf.html
@@ -10,13 +9,13 @@ Implementing such using something like:
     from types import SimpleNamespace
     job = SimpleNamespace(**job_dict(...))
 """
-"""
+
 def job_dict(nodes_required, name, account, \
              cpu_trace, gpu_trace, ntx_trace, nrx_trace, \
-             end_state, scheduled_nodes, job_id, priority=0, partition=0,
+             end_state, scheduled_nodes, job_id, priority=0, ml_priority=0, partition=0,
              submit_time=0, time_limit=0, start_time=0, end_time=0,
              wall_time=0, trace_time=0, trace_start_time=0,trace_end_time=0, trace_missing_values=False):
-    # Return job info dictionary 
+    """ Return job info dictionary """
     return {
         'nodes_required': nodes_required,
         'name': name,
@@ -28,6 +27,9 @@ def job_dict(nodes_required, name, account, \
         'end_state': end_state,
         'requested_nodes': scheduled_nodes,
         'id': job_id,
+        'priority': priority,
+		'ml_priority': ml_priority,
+        'partition': partition,
         # Times:
         'submit_time': submit_time,
         'time_limit': time_limit,
@@ -40,56 +42,6 @@ def job_dict(nodes_required, name, account, \
         'trace_missing_values': trace_missing_values
 
     }
-
-"""
-##new job_dict
-def job_dict(nodes_required, name, account, cpu_trace, gpu_trace, ntx_trace, nrx_trace, \
-             end_state, scheduled_nodes, job_id, num_cores_req, num_cores_alloc, num_nodes_req, num_nodes_alloc, num_tasks, num_gpus_req, num_gpus_alloc, mem_req, mem_alloc, threads_per_core, ml_priority, priority=0, partition=0,
-             submit_time=0, time_limit=0, start_time=0, end_time=0,
-             wall_time=0, trace_time=0, trace_start_time=0,trace_end_time=0, trace_missing_values=False ):
-    """ Return job info dictionary """
-    return {
-        'nodes_required': nodes_required,
-        'name': name,
-        'account': account,
-        'cpu_trace': cpu_trace,
-        'gpu_trace': gpu_trace,
-        'ntx_trace': ntx_trace,
-        'nrx_trace': nrx_trace,
-        'wall_time': wall_time,
-        'end_state': end_state,
-        'requested_nodes': scheduled_nodes,
-        'id': job_id,
-        'priority': priority,
-         # the features below are newly added for ML based decision making
-         #'cores_per_task': cores_per_task,
-        'num_cores_req': num_cores_req,
-        'num_cores_alloc': num_cores_alloc,
-        'num_nodes_req': num_nodes_req,
-        'num_nodes_alloc': num_nodes_alloc,
-        'num_tasks': num_tasks,
-        'num_gpus_req': num_gpus_req,
-        'num_gpus_alloc': num_gpus_alloc,
-        'mem_req': mem_req,
-        'mem_alloc': mem_alloc,
-        'threads_per_core': threads_per_core,
-        'time_limit': time_limit,
-        'ml_priority': ml_priority,
-        'partition': partition,
-        'submit_time': submit_time,
-        'time_limit': time_limit,
-        'start_time': start_time,
-        'end_time': end_time,
-        'wall_time': wall_time,
-        'trace_time': trace_time,
-        'trace_start_time': trace_start_time,
-        'trace_end_time': trace_end_time,
-        'trace_missing_values': trace_missing_values
-
-    }
-
-
-
 
 
 class JobState(Enum):

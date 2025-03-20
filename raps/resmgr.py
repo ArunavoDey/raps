@@ -24,16 +24,6 @@ class ResourceManager:
         else:  # Synthetic or case using modified/poisson arrival times
             job.scheduled_nodes = self.available_nodes[:job.nodes_required]
             self.available_nodes = self.available_nodes[job.nodes_required:]
-        """
-        job.scheduled_nodes = self.available_nodes[:job.nodes_required]
-        print("printing from else condition")
-        print(self.available_nodes)
-        print(job.nodes_required)
-        self.available_nodes = self.available_nodes[job.nodes_required:]
-
-        print("printing job scheduled nodes")
-        print(job.scheduled_nodes)
-        """
 
         # Set job start and end times according to simulation
         # This overrides actual times from telemetry and set state to 'running'

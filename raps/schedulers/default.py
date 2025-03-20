@@ -4,16 +4,6 @@ from ..utils import summarize_ranges
 
 from ..workload import MAX_PRIORITY
 
-"""
-class PolicyType(Enum):
-    #Supported scheduling policies.
-    FCFS = 'fcfs'
-    BACKFILL = 'backfill'
-    PRIORITY = 'priority'
-    FUGAKU_PTS = 'fugaku_pts'
-    SJF = 'sjf'
-    ML = 'ml'
-"""
 from ..policy import PolicyType, BackfillType
 
 
@@ -69,7 +59,6 @@ class Scheduler:
 
             if nodes_available:
                 self.place_job_and_manage_queues(job, queue, running, current_time)
-                print(f"scheduled job {job.name} with wall time {job.wall_time}")
             else:  # In case the job was not placed, see how we should continue:
                 if self.bfpolicy is not None:
                     self.backfill(queue, running, current_time)
@@ -78,7 +67,7 @@ class Scheduler:
                 if self.policy in [PolicyType.REPLAY]:
                     continue  # Regardless if the job at the front of the queue doenst fit, try placing all of them.
                 elif self.policy in [PolicyType.FCFS, PolicyType.PRIORITY,
-                                     PolicyType.FUGAKU_PTS, PolicyType.LJF, PolicyType.ML]:
+                                     PolicyType.FUGAKU_PTS, PolicyType.LJF]:
                     break  # The job at the front of the queue doesnt fit stop processing the queue.
                 else:
                     raise NotImplementedError("Depending on the Policy this choice should be explicit. Add the implementation above!")

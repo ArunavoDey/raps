@@ -13,35 +13,6 @@ from .resmgr import ResourceManager
 from .schedulers import load_scheduler
 
 
-
-
-
-from typing import Optional
-import dataclasses
-import pandas as pd
-import numpy as np
-from .job import Job, JobState
-from .network import network_utilization
-from .utils import summarize_ranges, expand_ranges, get_utilization
-from .resmgr import ResourceManager
-from .schedulers import load_scheduler
-
-com_job_array = []
-job_start_time_array = []
-job_submit_time_array = []
-job_tat_array = []
-job_awt_array = []
-ndes_req_array = []
-ml_prio_array = []
-job_power_array = []
-node_efficiency_array = []
-job_priority_array = []
-
-import sys
-from .policy import PolicyType
-from .utils import sum_values, min_value, max_value
-
-
 @dataclasses.dataclass
 class TickData:
     """ Represents the state output from the simulation each tick """
@@ -119,9 +90,7 @@ class Engine:
         # Convert them to Job instances and build list of eligible jobs.
         eligible_jobs_list = []
         for job_data in eligible:
-            #job_data.qentry_time = self.current_time
             job_instance = Job(job_data)
-            job_instance.qentry_time = self.current_time
             eligible_jobs_list.append(job_instance)
         self.queue += eligible_jobs_list
 
@@ -140,38 +109,15 @@ class Engine:
         # Convert them to Job instances and build list of eligible jobs.
         eligible_jobs_list = []
         for job_data in eligible:
-            #job_data.qentry_time = self.current_time
             job_instance = Job(job_data)
-            job_instance.qentry_time = self.current_time
             eligible_jobs_list.append(job_instance)
         self.queue += eligible_jobs_list
 
     def prepare_timestep(self, replay:bool = True):
-        global com_job_array
-        global job_start_time_array
-        global job_submit_time_array
-        global ndes_req_array
-        global ml_prio_array
-        global job_tat_array
-        global job_awt_array
-        global job_power_array
-        global node_efficiency_array
-        global job_priority_array
         completed_jobs = [job for job in self.running if job.end_time is not None and job.end_time <= self.current_time]
-        print("printing completed jobs")
-        print(completed_jobs)
 
         for job in completed_jobs:
             job.state = JobState.COMPLETED
-            com_job_array.append(job.id)
-            job_start_time_array.append(job.start_time)
-            job_submit_time_array.append(job.submit_time)
-            ndes_req_array.append(job.nodes_required)
-            ml_prio_array.append(job.ml_priority)
-            job_tat_array.append(job.end_time-job.submit_time)
-            job_awt_array.append(job.start_time-job.qentry_time)
-            job_power_array.append(job.power_history)
-            job_priority_array.append(job.priority)
 
             self.running.remove(job)
             self.jobs_completed += 1
@@ -201,6 +147,7 @@ class Engine:
 
     def tick(self):
         """Simulate a timestep."""
+
         # Update running time for all running jobs
         scheduled_nodes = []
         cpu_utils = []
@@ -272,7 +219,6 @@ class Engine:
                 if job.running_time % self.config['TRACE_QUANTA'] == 0:
                     job.power_history.append(jobs_power[i] * len(job.scheduled_nodes))
             del _running_jobs
-
 
         # Update the power array UI component
         rack_power, rect_losses = self.power_manager.compute_rack_power()
@@ -399,89 +345,6 @@ class Engine:
             tick_data = self.tick()
             tick_data.completed = completed_jobs
             yield tick_data
-
-    def get_stats(self):
-        """ Return output statistics """
-        global com_job_array
-        global job_start_time_array
-        global job_submit_time_array
-        global ndes_req_array
-        global ml_prio_array
-        global job_tat_array
-        global job_awt_array
-        global job_power_array
-        global node_efficiency_array
-        global job_priority_array
-
-        sum_values = lambda values: sum(x[1] for x in values) if values else 0
-        min_value = lambda values: min(x[1] for x in values) if values else 0
-        max_value = lambda values: max(x[1] for x in values) if values else 0
-        num_samples = len(self.power_manager.history) if self.power_manager else 0
-
-        throughput = self.jobs_completed / self.timesteps * 3600 if self.timesteps else 0  # Jobs per hour
-        average_power_mw = sum_values(self.power_manager.history) / num_samples / 1000 if num_samples else 0
-        average_loss_mw = sum_values(self.power_manager.loss_history) / num_samples / 1000 if num_samples else 0
-
-
-        average_tat = np.sum(job_tat_array)/len(job_tat_array)
-        ##fairness index calculation
-
-        fairness_index = np.power(np.sum(job_tat_array),2)/( len(job_tat_array)*np.sum(np.power(job_tat_array,2)))
-
-
-        min_loss_mw = min_value(self.power_manager.loss_history) / 1000 if num_samples else 0
-        max_loss_mw = max_value(self.power_manager.loss_history) / 1000 if num_samples else 0
-        
-        average_awt = np.sum(job_awt_array)/len(job_awt_array)
-
-
-
-        loss_fraction = average_loss_mw / average_power_mw if average_power_mw else 0
-        efficiency = 1 - loss_fraction if loss_fraction else 0
-        total_energy_consumed = average_power_mw * self.timesteps / 3600 if self.timesteps else 0  # MW-hr
-        emissions = total_energy_consumed * 852.3 / 2204.6 / efficiency if efficiency else 0
-        total_cost = total_energy_consumed * 1000 * self.config.get('POWER_COST', 0)  # Total cost in dollars
-        
-        total_job_power = 0.0
-        for power_history in job_power_array:
-            total_job_power += np.sum(power_history)
-        ## energy delay product
-        energy_delay_product = average_tat* total_job_power
-
-        ##diversity index calculation
-        diversity_index = np.var(job_priority_array)/len(job_priority_array)
-
-        stats = {
-            'num_samples': num_samples,
-            'jobs completed': self.jobs_completed,
-            'throughput': f'{throughput:.2f} jobs/hour',
-            'average_turnaround_time': f'{average_tat: .2f}',
-            'average_waiting_time': f'{average_awt: .2f}',
-            'jobs still running': [job.id for job in self.running],
-            'jobs still in queue': [job.id for job in self.queue],
-            'average power': f'{average_power_mw:.2f} MW',
-            'min loss': f'{min_loss_mw:.2f} MW',
-            'average loss': f'{average_loss_mw:.2f} MW',
-            'max loss': f'{max_loss_mw:.2f} MW',
-            'system power efficiency': f'{efficiency * 100:.2f}%',
-            'total energy consumed': f'{total_energy_consumed:.2f} MW-hr',
-            'carbon emissions': f'{emissions:.2f} metric tons CO2',
-            'total cost': f'${total_cost:.2f}',
-            'completed_job_ids': f'{com_job_array}',
-            'job_start_time_array': f'{job_start_time_array}',
-            'job_submit_time_array': f'{job_submit_time_array}',
-            'nodes_required_array': f'{ndes_req_array}',
-            'ml_prio_array': f'{ml_prio_array}',
-            'total_job_power': f"{total_job_power}",
-            'fairness_index': f"{fairness_index}",
-             #'node_efficiency': f"{node_efficiency}",
-            'energy_delay_product': f"{energy_delay_product}",
-            'diversity_index': f"{diversity_index}",
-            'job_power_array': f"{job_power_array}"
-
-        }
-
-        return stats
 
     def get_job_history_dict(self):
         return self.job_history_dict

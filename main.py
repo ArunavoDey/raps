@@ -7,7 +7,7 @@ import pandas as pd
 import os
 import re
 import time
-import csv
+
 from tqdm import tqdm
 
 from raps.helpers import check_python_version
@@ -32,21 +32,6 @@ from raps.workload import Workload
 from raps.account import Accounts
 from raps.weather import Weather
 from raps.utils import create_casename, convert_to_seconds, write_dict_to_file, next_arrival
-"""
-def plot_line_chart(Y, xaxis_label = "Timestamp", yaxis_label="Total power usage", name="sample.pdf"):
-  X = np.arange(1, len(Y) + 1)
-
-  fig = go.Figure(data=go.Scatter(x=X, y=Y, mode='lines', line=dict(width=2)))
-
-  fig.update_layout(
-    xaxis_title=xaxis_label,
-    yaxis_title=yaxis_label
-  )
-
-  # Show the plot
-  fig.show()
-  fig.write_image(name)
-"""
 from raps.stats import get_engine_stats, get_job_stats
 
 config = ConfigManager(system_name=args.system).get_config()
@@ -92,6 +77,7 @@ if args.fastforward:
 
 
 if args.replay:
+
     td = Telemetry(**args_dict)
 
     # Try to extract date from given name to use as case directory
@@ -101,7 +87,7 @@ if args.replay:
         DIR_NAME = "sim=" + extracted_date
     else:
         extracted_date = "Date not found"
-        DIR_NAME = create_casename()
+        DIR_NAME = create_casename(args.system + args.policy)
 
     # Read telemetry data (either npz file or via custom data loader)
     if args.replay[0].endswith(".npz"):  # Replay .npz file
@@ -132,17 +118,7 @@ if args.replay:
         print(*args.replay)
         jobs, timestep_start_from_data, timestep_end = td.load_data(args.replay)
         timestep_start += timestep_start_from_data
-        print("Printing Jobs TimeStep Start TimeStep End")
-        print("Jobs")
-        print(jobs)
-        print(len(jobs))
-        print("timestep_start")
-        print(timestep_start)
-        print("timestep_end")
-        print(timestep_end)
-        print("args")
-        print(args)
-        #td.save_snapshot((jobs, timestep_start, timestep_end, args), filename=DIR_NAME)
+        td.save_snapshot((jobs, timestep_start, timestep_end, args), filename=DIR_NAME)
 
     # Set number of timesteps based on the last job running which we assume
     # is the maximum value of submit_time + wall_time of all the jobs
@@ -153,15 +129,8 @@ if args.replay:
 
 
 else:  # Synthetic jobs
-    print("Inside Else Block")
     wl = Workload(config)
     jobs = getattr(wl, args.workload)(num_jobs=args.numjobs)
-    job_accounts = Accounts(jobs)
-    if args.accounts_json:
-        loaded_accounts = Accounts.from_json_filename(args.accounts_json)
-        accounts = Accounts.merge(loaded_accounts,job_accounts)
-    else:
-        accounts = job_accounts
 
     if args.verbose:
         for job_vector in jobs:
@@ -198,7 +167,6 @@ if args.plot or args.output:
 if args.verbose:
     print(jobs)
 
-
 total_timesteps = timestep_end - timestep_start
 print(f'Simulating {len(jobs)} jobs for {total_timesteps} seconds')
 layout_manager = LayoutManager(args.layout, engine=sc, debug=args.debug, total_timesteps=total_timesteps, **config)
@@ -215,50 +183,6 @@ except:
     print(engine_stats)
     print(job_stats)
 
-
-
-"""
-keys_to_include = ["num_samples",
-            "jobs completed",
-            "throughput",
-            "average_turnaround_time",
-            "average_waiting_time",
-            "total_job_power",
-            "fairness_index",
-            "node_efficiency",
-            "energy_delay_product"]
-fileI = open(f"Time-{args.time}-policy-{args.schedule}.csv", "w")
-writer = csv.DictWriter(fileI, fieldnames=keys_to_include)
-filtered_stats = {key: output_stats[key] for key in keys_to_include}
-writer.writerow(filtered_stats)
-"""
-output_stats = sc.get_stats()
-with open(f"Time-{args.time}-policy-{args.policy}.csv",mode="w",newline="") as fileI:
-    writer = csv.writer(fileI)
-    for key, value in output_stats.items():
-        writer.writerow([key, value])
-
-fileI.close()
-print("csv written successfully")
-"""
-with open(f"Time-{args.time}-policy-{args.policy}_powers.csv",mode="w",newline="") as fileI:
-    writer = csv.writer(fileI)
-    for key, value in output_stats.items():
-        if key == "job_power_array":
-            writer.writerow([key, value])
-            #fileI.close()
-            print(value)
-            #plot_line_chart(value, xaxis_label = "Timestamp", yaxis_label="Total power usage", name=f"{os.getcwd()}Time-{args.time}-policy-{args.policy}_powers.csv" )
-fileI.close()
-"""
-# Following b/c we get the following error when we use PM100 telemetry dataset
-# TypeError: Object of type int64 is not JSON serializable
-"""
-try:
-    print(json.dumps(output_stats, indent=4))
-except:
-    print(output_stats)
-"""
 
 if args.plot:
     if 'power' in args.plot:

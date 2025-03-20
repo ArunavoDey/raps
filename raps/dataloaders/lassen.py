@@ -89,7 +89,6 @@ def load_data_from_df(allocation_df, node_df, step_df, **kwargs):
     allocation_df = allocation_df[allocation_df['end_timestamp'] >= simulation_start_timestamp]  # Job should not have ended before the simulation time
     allocation_df = allocation_df[allocation_df['job_submit_timestamp'] < simulation_end_timestamp]  # Job has to have been submited before or during the simulaion time
 
-
     job_list = []
 
     for _, row in tqdm(allocation_df.iterrows(), total=len(allocation_df), desc="Processing Jobs"):

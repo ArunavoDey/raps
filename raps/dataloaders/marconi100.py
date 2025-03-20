@@ -26,39 +26,10 @@ import uuid
 import random
 import numpy as np
 import pandas as pd
-import random
 from tqdm import tqdm
-import os
+
 from ..job import job_dict
 from ..utils import power_to_utilization, next_arrival
-from ..preprocessing import preprocessor
-from ..rnn_testing import rnn_testing
-from ..timeseries_testing import timeseries_testing
-from ..timeseries_test import timeseries_test
-from ..TimeSeriesPredictor import TimeSeriesPredictor
-from ..ranking import TabularTimeSeriesRankingModel, ranking_jobs_on_multi_feature_train, scoring_function
-"""
-load_config_variables([
-    'CPUS_PER_NODE',
-    'GPUS_PER_NODE',
-    'NICS_PER_NODE',
-    'TRACE_QUANTA',
-    'POWER_GPU_IDLE',
-    'POWER_GPU_MAX',
-    'POWER_CPU_IDLE',
-    'POWER_CPU_MAX',
-    'POWER_NIC',
-    'POWER_NVME', 
-    'UI_UPDATE_FREQ'
-], globals())
-"""
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
-import pandas as pd
-from ..SimpleNN import SimpleFeedForwardNN, train_model
-
 
 
 def load_data(jobs_path, **kwargs):
@@ -69,82 +40,13 @@ def load_data(jobs_path, **kwargs):
     ----------
     jobs_path : str
         The path to the jobs parquet file.
+
     Returns
     -------
     list
         The list of parsed jobs.
     """
     jobs_df = pd.read_parquet(jobs_path, engine='pyarrow')
-    training_data = pd.read_csv("/work2/08389/hcs77/ls6/application-fingerprinting/fig/selected_data.csv" )
-    jobs_df =  jobs_df.drop(training_data.index, errors='ignore') #jobs_df[0:500]
-    #jobs_df = jobs_df[0:500]
-    p = preprocessor(jobs_df)
-    feature_cols = ['cores_per_task', 'num_cores_req', 'num_cores_alloc', 'num_nodes_req', 'num_nodes_alloc', 'num_tasks', 'priority', 'num_gpus_req', 'num_gpus_alloc', 'mem_req', 'mem_alloc', 'time_limit']
-    
-    target_col = 'cpu_power_consumption'
-    N = 100  # Number of time steps in the input sequence
-    M = 10
-    df_test, scaler, X_test_numerical = p.preprocess_data_disjoint_testing(feature_cols, target_col, N, M)
-    #print(f"X_test_numerical {X_test_numerical}")
-    # Create disjoint sequences for the time series data
-    #X_time_series_train, y_train_sequences = p.create_disjoint_sequences3(df_train, target_col, N, M)  # CHANGED LINE
-    X_time_series_test, y_test_sequences = p.create_disjoint_sequences_testing(df_test, target_col, N, M)  # CHANGED LINE
-    #print(f"X_time_series_test {X_time_series_test}")
-    """
-    model = rnn_testing()
-    _ , _, cpu_power_consumption_predictions = model(X_test_numerical, X_time_series_test)
-    """
-    model = timeseries_test("RNN")
-    cpu_power_consumption_predictions = model(df_test)
-    cpu_power_consumption_predictions = [t.detach().numpy() for t in cpu_power_consumption_predictions]
-    print("cpu_power_consumption_predictions")
-    print(cpu_power_consumption_predictions)
-    sample_df_data=[]
-    random.seed(42)
-    for i in range(len(df_test["num_nodes_req"].values)):
-        sample_df_data.append(df_test["num_nodes_req"].values[i])#(random.randint(1, 10))
-    #print("printing sample data")
-    #print(sample_df_data)
-    sample_df = pd.DataFrame(columns=["num_nodes"], data = sample_df_data) #df_test["num_nodes_alloc"].values)
-    sample_df["power_consumptions"] = cpu_power_consumption_predictions#.tolist()
-    sample_df["priority"] = jobs_df["priority"]
-    sample_df["time_limit"] = jobs_df["time_limit"]
-    sample_df["cores_per_task"] =  jobs_df["cores_per_task"]
-    sample_df["num_gpus_req"] = jobs_df["num_gpus_req"]
-    """
-    ###ranking
-    # Hyperparameters and configuration
-    num_features = 12  # Number of non-time-series features in tabular data
-    time_series_length = 10  # Length of the time-series data
-    lstm_hidden_size = 16
-    dense_hidden_size = 32
-    margin = 1.0  # Margin for the hinge loss
-
-    # Instantiate the model
-    model = TabularTimeSeriesRankingModel(num_features, time_series_length, lstm_hidden_size, dense_hidden_size)
-    model = ranking_jobs_on_multi_feature_train(model, train_loader)
-
-    ranking = get_job_ranking(model, x_test_tabular, x_test_ts)
-    """
-    #print("printing sample_df from ranking_generation")
-    #print(sample_df)
-    scores = scoring_function(sample_df, feature_columns=['num_nodes', 'power_consumptions'], 
-             time_series_column='power_consumptions', time_series_stat='mean')
-    """
-    high_priority = len(indices)
-    priority_array = []
-    for i in range(high_priority):
-        priority_array.append(0)
-    for i in range(high_priority):
-        priority_array[int(indices[i])] = int(i)
-    print("printing job priorities")
-    print(priority_array)
-    """
-    jobs_df["ml_priority"]= scores #priority_array #jobs_df["priority"]
-    jobs_df = jobs_df.sort_values(by='submit_time')
-    #jobs_df["num_nodes_req"] = sample_df["num_nodes"]
-    #jobs_df["num_nodes_alloc"] = sample_df["num_nodes"]
-    #sorted(jobs, key=lambda job: job.submit_time)
     return load_data_from_df(jobs_df, **kwargs)
 
 
@@ -244,35 +146,6 @@ def load_data_from_df(jobs_df: pd.DataFrame, **kwargs):
             gpu_trace = gpu_util * config['GPUS_PER_NODE']
 
         priority = int(jobs_df.loc[jidx, 'priority'])
-
-        # wall_time = jobs_df.loc[i, 'run_time']
-        #wall_time = gpu_trace.size * config['TRACE_QUANTA'] # seconds
-        #end_state = jobs_df.loc[jidx, 'job_state']
-        #time_start = jobs_df.loc[jidx+1, 'start_time']
-        #diff = time_start - time_zero
-        ##adding new features here
-        #cores_per_task = jobs_df.loc[jidx, 'cores_per_task']
-        num_cores_req = jobs_df.loc[jidx, 'num_cores_req']
-        num_cores_alloc = jobs_df.loc[jidx,'num_cores_alloc']
-        num_nodes_req = jobs_df.loc[jidx, 'num_nodes_req']
-        num_nodes_alloc = jobs_df.loc[jidx, 'num_nodes_alloc']
-        num_tasks = jobs_df.loc[jidx, 'num_tasks']
-        num_gpus_req = jobs_df.loc[jidx, 'num_gpus_req']
-        num_gpus_alloc = jobs_df.loc[jidx,'num_gpus_alloc']
-        mem_req = jobs_df.loc[jidx, 'mem_req']
-        mem_alloc = jobs_df.loc[jidx, 'mem_alloc']
-        threads_per_core = jobs_df.loc[jidx, 'threads_per_core']
-        time_limit = jobs_df.loc[jidx, 'time_limit']
-        cpu_power_consumption = jobs_df.loc[jidx, 'cpu_power_consumption']
-        ml_priority = jobs_df.loc[jidx, 'ml_priority']
-        ##new features end here
-        """
-        if jid == '*':
-            time_offset = max(diff.total_seconds(), 0)
-        else:
-            # When extracting out a single job, run one iteration past the end of the job
-            time_offset = config['UI_UPDATE_FREQ']
-        """
         partition = int(jobs_df.loc[jidx, 'partition'])
 
         submit_timestamp = jobs_df.loc[jidx, 'submit_time']
@@ -333,7 +206,7 @@ def load_data_from_df(jobs_df: pd.DataFrame, **kwargs):
             scheduled_nodes = (jobs_df.loc[jidx, 'nodes']).tolist()
 
         if gpu_trace.size > 0 and (jid == job_id or jid == '*'):  # and time_submit >= 0:
-            """
+
             job_info = job_dict(nodes_required, name, account, cpu_trace, gpu_trace, [], [],
                                 end_state, scheduled_nodes,
                                 job_id, priority, partition,
@@ -345,16 +218,6 @@ def load_data_from_df(jobs_df: pd.DataFrame, **kwargs):
                                 trace_missing_values=trace_missing_values)
 
             jobs.append(job_info)
-            """
-            job_info = job_dict(nodes_required, name, account, cpu_trace, gpu_trace, [], [], end_state, scheduled_nodes, job_id, num_cores_req, num_cores_alloc, num_nodes_req, num_nodes_alloc, num_tasks, num_gpus_req, num_gpus_alloc, mem_req, mem_alloc, threads_per_core, ml_priority, priority, partition,
-                                submit_time=submit_time, time_limit=time_limit,
-                                start_time=start_time, end_time=end_time,
-                                wall_time=wall_time, trace_time=trace_time,
-                                trace_start_time=trace_start_time,
-                                trace_end_time=trace_end_time,
-                                trace_missing_values=trace_missing_values)
-            jobs.append(job_info)
-
 
     return jobs, telemetry_start, telemetry_end
 

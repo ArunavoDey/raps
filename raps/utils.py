@@ -7,6 +7,7 @@ generating random numbers, summarizing and expanding ranges, determining job sta
 """
 
 from datetime import timedelta
+from datetime import datetime
 
 import hashlib
 import math
@@ -308,7 +309,7 @@ def create_casename(prefix=''):
     str
         Unique case name.
     """
-    return prefix + str(uuid.uuid4())[:7]
+    return prefix + "-" + str(uuid.uuid4())[:7] + "-" + datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
 
 
 def next_arrival(lambda_rate):

@@ -31,7 +31,7 @@ from .job import Job
 from .account import Accounts
 from .plotting import plot_submit_times, plot_nodes_histogram
 from .utils import next_arrival
-#from .dataloaders.marconi100 import marconi100
+
 
 class Telemetry:
     """A class for handling telemetry data, including reading/parsing job data, and loading/saving snapshots."""
@@ -40,9 +40,6 @@ class Telemetry:
         self.kwargs = kwargs
         self.system = kwargs.get('system')
         self.config = kwargs.get('config')
-        print(f"inside init function of telemetry for {self.system}")
-        import raps.dataloaders.marconi100 as mc
-        print("importing done")
         try:
             self.dataloader = importlib.import_module(f".dataloaders.{self.system}", package=__package__)
         except:
@@ -50,7 +47,7 @@ class Telemetry:
 
     def save_snapshot(self, jobs: list, filename: str):
         """Saves a snapshot of the jobs to a compressed file. """
-        np.savez_compressed(filename, jobs=jobs)
+        np.savez_compressed(filename, jobs=np.array(jobs, dtype=object))
 
     def load_snapshot(self, snapshot: str) -> list:
         """Reads a snapshot from a compressed file and returns the jobs."""
@@ -124,4 +121,3 @@ if __name__ == "__main__":
     if args.plot:
         plot_nodes_histogram(nr_list)
         plot_submit_times(submit_times, nr_list)
-
