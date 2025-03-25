@@ -11,6 +11,51 @@ import torch.nn.functional as F
 import pandas as pd
 #import SimpleNN
 from .SimpleNN import SimpleFeedForwardNN, train_model
+import math
+
+def inverse_sqrt(x):
+    return 1 / math.sqrt(1+x) #np.log(1 + x) #math.sqrt(1+x)
+
+
+import numpy as np
+def compute_job_score(predicted_power, job_duration, electricity_rate,
+                      node_count, cores_per_node, total_nodes,
+                      running_jobs, job_submission_time, current_time,
+                      max_wait_time=24, weights=None):
+    """
+    Computes the multi-objective job score based on power cost, efficiency, utilization, and wait time.
+    Parameters:
+    - predicted_power (float): GNN-predicted power consumption for the job.
+    - job_duration (float): Estimated job duration.
+    - electricity_rate (float): Cost per kWh at the given HPC site and time.
+    - node_count (int): Number of nodes requested by the job.
+    - cores_per_node (int): Number of cores per node.
+    - total_nodes (int): Total available nodes at the HPC site.
+    - running_jobs (list of int): List of node counts for currently running jobs at the site.
+    - job_submission_time (float): Time when the job was submitted.
+    - current_time (float): Current time step.
+    - max_wait_time (float): Maximum time before a job must be scheduled (default: 24 hours).
+    - weights (dict): Dictionary of weights for each factor {wc, wp, wu, ww}.
+    Returns:
+    - job_score (float): Computed priority score for scheduling.
+    """
+    if weights is None:
+        weights = {"wc": 1.0, "wp": 1.0, "wu": 1.0, "ww": 1.0}
+    # Cost Factor
+    C_jkt = 1 / (1 + predicted_power * job_duration * electricity_rate)
+    # Power Efficiency Factor
+    P_jk = 1 / (1 + predicted_power / (node_count * cores_per_node))
+    # Utilization Factor
+    U_kt = 1 - (sum(running_jobs) / total_nodes) if total_nodes > 0 else 0
+    # Wait Time Factor
+    W_jt = min((current_time - job_submission_time) / max_wait_time, 1)
+    # Compute Final Score
+    job_score = (weights["wc"] * C_jkt +
+                 weights["wp"] * P_jk +
+                 weights["wu"] * U_kt +
+                 weights["ww"] * W_jt)
+    return job_score
+
 
 
 def scoring_function(df, feature_columns, time_series_column, time_series_stat='mean'):
@@ -74,33 +119,49 @@ def scoring_function(df, feature_columns, time_series_column, time_series_stat='
     
     # Create a new DataFrame to store sorting keys
     sort_df = df.copy()
-    
+    print("printing sort df")
+    print(sort_df)
     # Aggregate the time-series feature and add it as a new column
     sort_df['aggregated_time_series'] = aggregate_time_series(sort_df[time_series_column], 'mean')
-    
     # Construct the sort keys by including the aggregated time-series and other feature columns
-    sort_columns = ["num_nodes","aggregated_time_series"] #[col if col != time_series_column else 'aggregated_time_series' for col in feature_columns]
+    sort_columns = ["num_nodes_req","aggregated_time_series"] #[col if col != time_series_column else 'aggregated_time_series' for col in feature_columns]
     #print("printing sort df")
     #print(sort_df)
     output_scores = []
-    alpha = 0.05
-    beta = 0.5
-    gamma = 0.2
-    delta = 0.05
-    phi = 0.2
+    
+    alpha = 0.0
+    beta = 100.0
+    gamma = 0.0
+    delta = 0.00
+    phi = 0.00
     
     for i in range(len(sort_df)):
         elm = sort_df[i:i+1]
-        n_nodes = elm["num_nodes"]
+        n_nodes = elm["num_nodes_req"]
         power_usage = elm["aggregated_time_series"]
         priority = elm["priority"]
         job_duration = elm["time_limit"]
         gpus = elm["num_gpus_req"]
         #print(f"num nodes {n_nodes}")
         #print(f"power usage {power_usage}")
-        
-        score = (alpha)*np.exp(-n_nodes)+ beta*np.exp(-power_usage)+gamma*np.exp(-job_duration)+delta*np.exp(priority)+phi*np.exp(-gpus)
-        #print(f"score {score}")
+        print("printing components of scoring function")
+        print(f"n_nodes {n_nodes}")
+        print(f"term {inverse_sqrt(n_nodes)}")
+        print(f"after multiplication {(alpha)*inverse_sqrt(n_nodes)}")
+        print(f"power_usage {power_usage}")
+        print(f"term {inverse_sqrt(power_usage)}")
+        print(f"after multiplication {(beta)*inverse_sqrt(power_usage)}")
+        print(f"job_duration {job_duration}")
+        print(f"term {inverse_sqrt(job_duration)}")
+        print(f"after multiplication {(gamma)*inverse_sqrt(job_duration)}")
+        print(f"priority {priority}")
+        print(f"term {inverse_sqrt(priority)}")
+        print(f"after multiplication {(delta)*inverse_sqrt(priority)}")
+
+
+        #score = (alpha)*np.exp(-n_nodes)+ beta*np.exp(-power_usage)+gamma*np.exp(-job_duration)+delta*np.exp(priority)+phi*np.exp(-gpus)
+        score = (alpha)*inverse_sqrt(n_nodes)+ beta*inverse_sqrt(power_usage)+gamma*inverse_sqrt(job_duration)+delta*inverse_sqrt(priority)+phi*inverse_sqrt(gpus)
+        print(f"inside func_loop score {score}")
         if math.isinf(score):
             score = 10.0
         if math.isnan(score):
@@ -117,7 +178,7 @@ def scoring_function(df, feature_columns, time_series_column, time_series_stat='
     s_df = (s_df - s_df.min()) / (s_df.max() - s_df.min())
     s_data = torch.tensor(s_df.to_numpy(), dtype=torch.float32)
     output_scores = model(s_data).squeeze().detach().numpy()
-    """
+    """  
     # Sort by the specified columns and get the sorted indices
     # sorted_indices = sort_df.sort_values(by=sort_columns).index.to_numpy()
     #print("printing scores from scoring function")

@@ -77,7 +77,28 @@ def load_data(jobs_path, **kwargs):
     jobs_df = pd.read_parquet(jobs_path, engine='pyarrow')
     training_data = pd.read_csv("/work2/08389/hcs77/ls6/application-fingerprinting/fig/selected_data.csv" )
     jobs_df =  jobs_df.drop(training_data.index, errors='ignore') #jobs_df[0:500]
-    #jobs_df = jobs_df[0:500]
+    #jobs_df = jobs_df[0:5000]
+    #jobs_df = jobs_df.dropna()
+    #mean_val = np.nanmean(jobs_df[:])
+    #jobs_df = jobs_df.fillna(jobs_df.mean(), inplace=True)
+    # Replace NaN values in numerical columns only
+    #jobs_df[jobs_df.select_dtypes(include=['number']).columns] = jobs_df.select_dtypes(include=['number']).fillna(jobs_df.mean())
+    
+    # Identify numeric columns
+    numeric_cols = jobs_df.select_dtypes(include=['number']).columns
+    print(f"printing numeric cols {numeric_cols}")
+    print("printing numeric df")
+    print(jobs_df.loc[:, numeric_cols])
+    # Fill NaN values in numeric columns with column means
+    jobs_df.loc[:, numeric_cols] = jobs_df[numeric_cols].fillna(jobs_df[numeric_cols].mean())
+
+
+
+
+    # Optionally, replace NaN in non-numeric columns with a placeholder (e.g., 'Unknown')
+    jobs_df.fillna('Unknown', inplace=True)
+
+
     p = preprocessor(jobs_df)
     feature_cols = ['cores_per_task', 'num_cores_req', 'num_cores_alloc', 'num_nodes_req', 'num_nodes_alloc', 'num_tasks', 'priority', 'num_gpus_req', 'num_gpus_alloc', 'mem_req', 'mem_alloc', 'time_limit']
     
@@ -99,6 +120,10 @@ def load_data(jobs_path, **kwargs):
     cpu_power_consumption_predictions = [t.detach().numpy() for t in cpu_power_consumption_predictions]
     print("cpu_power_consumption_predictions")
     print(cpu_power_consumption_predictions)
+    print(f"printing length of cpu_power_consumptions {len(cpu_power_consumption_predictions)}")
+    print(f"printing length of priority {len(df_test['priority'])}")
+    print(f"printing length of num_gpus_req {len(df_test['num_gpus_req'])}")
+    print(f"printing length of cores_per_task {len(df_test['cores_per_task'])}")
     sample_df_data=[]
     random.seed(42)
     for i in range(len(df_test["num_nodes_req"].values)):
@@ -106,11 +131,14 @@ def load_data(jobs_path, **kwargs):
     #print("printing sample data")
     #print(sample_df_data)
     sample_df = pd.DataFrame(columns=["num_nodes"], data = sample_df_data) #df_test["num_nodes_alloc"].values)
+    
     sample_df["power_consumptions"] = cpu_power_consumption_predictions#.tolist()
-    sample_df["priority"] = jobs_df["priority"]
-    sample_df["time_limit"] = jobs_df["time_limit"]
-    sample_df["cores_per_task"] =  jobs_df["cores_per_task"]
-    sample_df["num_gpus_req"] = jobs_df["num_gpus_req"]
+    sample_df["priority"] = df_test["priority"]
+    sample_df["time_limit"] = df_test["time_limit"]
+    sample_df["cores_per_task"] =  df_test["cores_per_task"]
+    sample_df["num_gpus_req"] = df_test["num_gpus_req"]
+    sample_df2 = df_test [['num_nodes_req','num_gpus_req','cores_per_task','priority','time_limit']]
+    sample_df2["power_consumptions"] = cpu_power_consumption_predictions
     """
     ###ranking
     # Hyperparameters and configuration
@@ -128,8 +156,16 @@ def load_data(jobs_path, **kwargs):
     """
     #print("printing sample_df from ranking_generation")
     #print(sample_df)
-    scores = scoring_function(sample_df, feature_columns=['num_nodes', 'power_consumptions'], 
+    print("printing df_test num_gpus_req column")
+    print(df_test["num_gpus_req"])
+    print("printing dataframe before scoring function")
+    print(sample_df["num_gpus_req"])
+    print("printing sample_df2 num_gpus_req")
+    print(sample_df2["num_gpus_req"])
+    scores = scoring_function(sample_df2, feature_columns=['num_nodes', 'power_consumptions'], 
              time_series_column='power_consumptions', time_series_stat='mean')
+    print("printing job scores")
+    print(scores)
     """
     high_priority = len(indices)
     priority_array = []

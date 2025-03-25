@@ -235,7 +235,6 @@ class preprocessor():
     # Fill NaN values with the mean of each column
     ###jaya's functions
     self.df, features = self.process_cores_nodes_alloc(self.df, features)
-
     for feature in features:
       print(f"the feature is {feature} {self.df[feature]}")
       mean_val = np.nanmean(self.df[feature])
@@ -284,6 +283,8 @@ class preprocessor():
     self.df.dropna(axis=1, inplace=True)
     print("After dropping nan values")
     print(self.df)
+    print("After Scaling num_gpus column")
+    print(self.df["num_gpus_req"])
     # Randomly split the data into training and testing sets
     #df_train = self.df.sample(frac=0.8, random_state=42)
     df_test = self.df#.drop(df_train.index)
