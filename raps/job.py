@@ -73,6 +73,7 @@ class Job:
         self.power_history = []
         self._state = state
         self.account = account
+        self.ml_priority = 0
         # Times:
         self.submit_time = None   # Actual submit time
         self.time_limit = None    # Time limit set at submission
@@ -160,6 +161,7 @@ class JobStatistics:
         self.start_time = job.start_time
         self.end_time = job.end_time
         self.state = job._state
+        self.ml_priority = job.ml_priority
         if len(job.power_history) == 0:
             self.avg_node_power = 0
             self.max_node_power = 0

@@ -96,6 +96,7 @@ def load_data_from_df(df, **kwargs):
 
         job_id = row['jid'] if 'jid' in df.columns else 'unknown'
         priority = row['pri'] if 'pri' in df.columns else 0
+        ml_priority = row['ml_prioriy'] if 'ml_priority' in df.columns else 0
 
         submit_timestamp = pd.to_datetime(row['adt']) if 'adt' in df.columns else -1  # Else job was submitted in the past
         diff = submit_timestamp - telemetry_start_timestamp
@@ -145,6 +146,7 @@ def load_data_from_df(df, **kwargs):
             scheduled_nodes=scheduled_nodes,
             job_id=job_id,
             priority=priority,
+            ml_priority=ml_priority,
             submit_time=submit_time,
             time_limit=time_limit,
             start_time=start_time,
