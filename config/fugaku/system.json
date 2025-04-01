@@ -1,7 +1,7 @@
 {
-    "NUM_CDUS": 24,
+    "NUM_CDUS": 12,
     "RACKS_PER_CDU": 18,
-    "NODES_PER_RACK": 368,
+    "NODES_PER_RACK": 120,
     "RECTIFIERS_PER_RACK": 8,
     "CHASSIS_PER_RACK": 8,
     "NODES_PER_BLADE": 1,

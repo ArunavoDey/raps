@@ -67,7 +67,7 @@ class Scheduler:
                 if self.policy in [PolicyType.REPLAY]:
                     continue  # Regardless if the job at the front of the queue doenst fit, try placing all of them.
                 elif self.policy in [PolicyType.FCFS, PolicyType.PRIORITY,
-                                     PolicyType.FUGAKU_PTS, PolicyType.LJF]:
+                                     PolicyType.FUGAKU_PTS, PolicyType.LJF, PolicyType.ML, PolicyType.SJF]:
                     break  # The job at the front of the queue doesnt fit stop processing the queue.
                 else:
                     raise NotImplementedError("Depending on the Policy this choice should be explicit. Add the implementation above!")
