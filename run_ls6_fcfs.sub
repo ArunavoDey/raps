@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH -A ASC23014
+#SBATCH -J fcfs # Job name changed to fcfs
+#SBATCH -o fcfs.o%j       # Name of stdout output file
+#SBATCH -e fcfs.e%j       # Name of stderr error file
+#SBATCH -p gpu-a100-small    # Queue (partition) name
+#SBATCH -N 1               # Total # of nodes 
+#SBATCH -n 1               # Total # of mpi tasks
+#SBATCH -t 08:00:00        # Run time (hh:mm:ss)
+
+date
+source ./myenv/bin/activate
+
+#python3 main.py -f $WORK/raps/testMode_custom_split_results.parquet --system fugaku --policy fcfs --backfill firstfit -o -p power --imtype pdf -t 2d
+python3 main.py -f /work/09816/yxv11/ls6/raps/testMode_results_combined.parquet --system fugaku -o -p power --imtype pdf -t 15d --backfill firstfit --policy fcfs -ff 40d
+
+
+
+date
+
