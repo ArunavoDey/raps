@@ -10,7 +10,7 @@ from ..policy import PolicyType, BackfillType
 class Scheduler:
     """ Default job scheduler with various scheduling policies. """
 
-    def __init__(self, config, policy, bfpolicy=None, resource_manager=None):
+    def __init__(self, config, policy, bfpolicy=None, jobs=None, resource_manager=None):
         self.config = config
         if policy is None:  # policy is passed as policy=None, therefore default is not choosen
             policy = "replay"
@@ -65,6 +65,7 @@ class Scheduler:
 
                 # After backfill dedice continue processing the queue or wait, continuing may result in fairness issues.
                 if self.policy in [PolicyType.REPLAY]:
+                    # print(f"Nodes available {nodes_available} - Req:{len(job.requested_nodes)} N-avail:{len(self.resource_manager.available_nodes)}")
                     continue  # Regardless if the job at the front of the queue doenst fit, try placing all of them.
                 elif self.policy in [PolicyType.FCFS, PolicyType.PRIORITY,
                                      PolicyType.FUGAKU_PTS, PolicyType.LJF, PolicyType.ML, PolicyType.SJF]:

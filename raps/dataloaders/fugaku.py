@@ -95,6 +95,7 @@ def load_data_from_df(df, **kwargs):
         scheduled_nodes = None  # Only nodes_required is in the trace
 
         job_id = row['jid'] if 'jid' in df.columns else 'unknown'
+
         priority = row['pri'] if 'pri' in df.columns else 0
         ml_priority = row['ml_priority'] if 'ml_priority' in df.columns else 0
 

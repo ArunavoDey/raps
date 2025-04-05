@@ -32,7 +32,7 @@ from raps.workload import Workload
 from raps.account import Accounts
 from raps.weather import Weather
 from raps.utils import create_casename, convert_to_seconds, write_dict_to_file, next_arrival
-from raps.stats import get_engine_stats, get_job_stats
+from raps.stats import get_engine_stats, get_job_stats, get_scheduler_stats
 
 config = ConfigManager(system_name=args.system).get_config()
 
@@ -63,12 +63,6 @@ else:
 args_dict['config'] = config
 flops_manager = FLOPSManager(**args_dict)
 
-sc = Engine(
-    power_manager=power_manager,
-    flops_manager=flops_manager,
-    cooling_model=cooling_model,
-    **args_dict,
-)
 
 timestep_start = 0
 if args.fastforward:
@@ -145,6 +139,14 @@ else:  # Synthetic jobs
 
     DIR_NAME = create_casename()
 
+sc = Engine(
+    power_manager=power_manager,
+    flops_manager=flops_manager,
+    cooling_model=cooling_model,
+    jobs=jobs,
+    **args_dict,
+)
+
 OPATH = OUTPUT_PATH / DIR_NAME
 print("Output directory is: ", OPATH)
 sc.opath = OPATH
@@ -174,14 +176,17 @@ layout_manager.run(jobs, timestep_start=timestep_start, timestep_end=timestep_en
 
 engine_stats = get_engine_stats(sc)
 job_stats = get_job_stats(sc)
+scheduler_stats = get_scheduler_stats(sc)
 # Following b/c we get the following error when we use PM100 telemetry dataset
 # TypeError: Object of type int64 is not JSON serializable
 try:
     print(json.dumps(engine_stats, indent=4))
     print(json.dumps(job_stats, indent=4))
+    print(json.dumps(scheduler_stats, indent=4))
 except:
     print(engine_stats)
     print(job_stats)
+    print(scheduler_stats)
 
 
 if args.plot:
@@ -256,6 +261,11 @@ if args.output:
         # Schedule history
         job_history = pd.DataFrame(sc.get_job_history_dict())
         job_history.to_csv(OPATH / "job_history.csv", index=False)
+
+        scheduler_running_history = pd.DataFrame(sc.get_scheduler_running_history())
+        job_history.to_csv(OPATH / "running_history.csv", index=False)
+        scheduler_queue_history = pd.DataFrame(sc.get_scheduler_running_history())
+        job_history.to_csv(OPATH / "queue_history.csv", index=False)
 
         try:
             with open(OPATH / 'stats.out', 'w') as f:
