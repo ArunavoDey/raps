@@ -144,7 +144,7 @@ def load_data_from_df(df, **kwargs):
             nrx_trace=[],
             end_state=end_state,
             scheduled_nodes=scheduled_nodes,
-            job_id=job_id,
+            id=job_id,
             priority=priority,
             ml_priority=ml_priority,
             submit_time=submit_time,
@@ -155,9 +155,7 @@ def load_data_from_df(df, **kwargs):
             trace_time=trace_time,
             trace_start_time=trace_start_time,
             trace_end_time=trace_end_time,
-            trace_missing_values=trace_missing_values
-        )
-
+            trace_missing_values=trace_missing_values)
         job_list.append(job_info)
 
     return job_list, telemetry_start, telemetry_end

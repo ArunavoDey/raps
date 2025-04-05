@@ -53,18 +53,6 @@ def min_max_sum(value,min,max,sum):
     return min,max,sum
 
 
-def inverse_sum(value,min,max,sum):
-    if value < 0:
-        value = 0
-    if value < min:
-        min = value
-    if value > max:
-        max = value
-    sum += 1/value
-    return min,max,sum
-
-
-
 def get_scheduler_stats(engine: Engine):
     average_queue = sum(engine.scheduler_queue_history) / len(engine.scheduler_queue_history)
     average_running = sum(engine.scheduler_running_history) / len(engine.scheduler_running_history)
@@ -91,7 +79,6 @@ def get_job_stats(engine: Engine):
 
     min_wait_time, max_wait_time, sum_wait_time = sys.maxsize, -sys.maxsize - 1, 0
     min_turnaround_time, max_turnaround_time, sum_turnaround_time = sys.maxsize, -sys.maxsize - 1, 0
-    #inv_sum_turnaround_time = 0
     min_psf_partial_num, max_psf_partial_num, sum_psf_partial_num = sys.maxsize, -sys.maxsize - 1, 0
     min_psf_partial_den, max_psf_partial_den, sum_psf_partial_den = sys.maxsize, -sys.maxsize - 1, 0
     min_awrt, max_awrt, sum_awrt = sys.maxsize, -sys.maxsize - 1, 0
@@ -137,13 +124,9 @@ def get_job_stats(engine: Engine):
         min_wait_time,max_wait_time,sum_wait_time = \
             min_max_sum(wait_time, min_wait_time, max_wait_time, sum_wait_time)
 
-
         turnaround_time = job["end_time"] - job["submit_time"]
         min_turnaround_time, max_turnaround_time, sum_turnaround_time = \
             min_max_sum(turnaround_time, min_turnaround_time, max_turnaround_time, sum_turnaround_time)
-        #inv_sum_turnaround_time = \
-        #inverse_sum(turnaround_time, min_turnaround_time, max_turnaround_time, inv_sum_turnaround_time)
-
 
         # Area Weighted Average Response Time
         awrt = agg_node_hours * turnaround_time  # Area Weighted Response Time

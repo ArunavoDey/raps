@@ -167,18 +167,18 @@ def load_data_from_df(allocation_df, node_df, step_df, **kwargs):
             print('scheduled_nodes:', nodes_required, scheduled_nodes)
 
         if wall_time >= 0:
-            job_info = job_dict(nodes_required,
-                                name,
-                                account,
-                                cpu_trace,
-                                gpu_trace,
-                                net_tx,
-                                net_rx,
-                                end_state,
-                                scheduled_nodes,
-                                job_id,
-                                priority,
-                                partition,
+            job_info = job_dict(nodes_required=nodes_required,
+                                name=name,
+                                account=account,
+                                cpu_trace=cpu_trace,
+                                gpu_trace=gpu_trace,
+                                ntx_trace=net_tx,
+                                nrx_trace=net_rx,
+                                end_state=end_state,
+                                scheduled_nodes=scheduled_nodes,
+                                id=job_id,
+                                priority=priority,
+                                partition=partition,
                                 submit_time=submit_time,
                                 time_limit=time_limit,
                                 start_time=start_time,
@@ -226,12 +226,12 @@ def adjust_bursts(burst_intervals, total, intervals):
     bursts = np.round(bursts).astype(int)
     adjustment = total - np.sum(bursts)
 
-    # Distribute adjustment across non-zero elements to avoid negative values
-    if adjustment != 0:
-        for i in range(len(bursts)):
-            if bursts[i] > 0:
-                bursts[i] += adjustment % (2^64-1)
-                break  # Apply adjustment only once where it won't cause a negative
+    ## Distribute adjustment across non-zero elements to avoid negative values
+    #if adjustment != 0:
+    #    for i in range(len(bursts)):
+    #        if bursts[i] > 0:
+    #            bursts[i] += adjustment % (2^64-1)  # This can overflow!
+    #            break  # Apply adjustment only once where it won't cause a negative
 
     return bursts
 
