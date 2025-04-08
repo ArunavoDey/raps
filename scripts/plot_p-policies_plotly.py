@@ -94,4 +94,21 @@ fig.update_layout(
     )
 )
 # Show plot
-fig.write_image("Fugaku-power-vs-time.pdf")
+fig.write_image("Fugaku-power-vs-time.pdf", width=2000, height=2000)
+
+
+
+"""
+radialaxis=dict(
+    gridcolor='grey',
+    linecolor='grey',
+    visible=True,
+    #range=[0, 1]
+),
+
+angularaxis=dict(
+                gridcolor='grey',
+                linecolor='grey',
+                visible=True
+            ),
+"""
