@@ -10,7 +10,9 @@ import plotly.io as pio
 pio.kaleido.scope.mathjax = None
 
 # === CONFIGURATION ===
-plots = ['power', 'util', 'stats']  # You can remove any of these to toggle
+#plots = ['power', 'util', 'stats']
+#   # You can remove any of these to toggle
+plots = ['power']
 plot_files = {
     'power': 'power_history.parquet',
     'util': 'util.parquet',
@@ -143,8 +145,8 @@ fig = sp.make_subplots(
     rows=len(plots), cols=num_weeks,
     specs=specs,
     row_heights=row_heights,
-    vertical_spacing=0.1,
-    horizontal_spacing=0.04,
+    vertical_spacing=0.25,
+    horizontal_spacing=0.1,
 )
 
 # === PLOT LOOP ===
@@ -294,16 +296,17 @@ fig.update_layout(
     legend=dict(
         orientation="h",
         yanchor="bottom",
-        y=-0.05,
+        y=-0.3,
         xanchor="center",
         x=0.5
     ),
     margin=dict(l=10, r=10, t=30, b=20),
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)',
-    font=dict(size=80),
+    font=dict(size=18),
 )
 
 # === SAVE ===
-fig.write_image("Fugaku-power-utilization-stats-all.pdf", width=3000 * len(weeks), height= 2000 * len(plots))
+#fig.write_image("Fugaku-power-utilization-stats-all.pdf", width=3000 * len(weeks), height= 2000 * len(plots))
+fig.write_image("Fugaku-power-utilization-stats-all.pdf")
 print("Plot saved to: Fugaku-power-utilization-stats-all.pdf")
