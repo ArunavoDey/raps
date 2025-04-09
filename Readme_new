@@ -1,0 +1,5 @@
+You can see different policies scrips like run_ls6_ml.sub, run_ls6_sjf.sub, run_ls6_ljf.sub, run_ls6_priority.sub, run_ls6_fcfs.sub
+job_distribution.csv has mapping , tell you which window is IDLE, good, bad and priority.
+testMode_results.parquet are uploaded in onedrive. There are 2 testMode reults file
+    1. results/fugaku/testMode_results - Does not contain priority window
+    2. results/fugaku_with_priority/testMode_results - Contains priority window
